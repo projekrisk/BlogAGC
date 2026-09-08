@@ -26,8 +26,6 @@ class RunCampaigns extends Command
      */
     protected $description = 'Menjalankan bot auto post untuk mengecek jadwal campaign aktif';
 
-    /**
-     */
     public function handle(GoogleTrendsService $trendsService, GeminiService $geminiService, BloggerService $bloggerService, ImageService $imageService)
     {
         $this->info('Memulai pengecekan sistem Bot Campaign...');
@@ -74,7 +72,7 @@ class RunCampaigns extends Command
                 ]);
 
             } else {
-                $this->info("=> Menarik data trend dari negara: {$campaign->geo_location}...");
+                $this->info("=> Waktunya eksekusi! Menarik data trend dari negara: {$campaign->geo_location}...");
                 
                 $trendsList = $trendsService->fetchDailyTrends($campaign->geo_location);
 
@@ -107,7 +105,7 @@ class RunCampaigns extends Command
             $this->info("=> KEYWORD TERPILIH: [ {$selectedKeyword} ]");
             $this->info("=> KONTEKS BERITA: " . ($newsContext ?: 'Tidak ada cuplikan spesifik'));
 
-            $this->info("=> Sedang menulis artikel...");
+            $this->info("=> Mengirim perintah ke AI Gemini untuk menulis artikel...");
             
             $articleData = $geminiService->generateArticle($selectedKeyword, $campaign->name, $newsContext);
 
@@ -119,15 +117,15 @@ class RunCampaigns extends Command
             $this->info("=> ARTIKEL SELESAI DITULIS!");
             $this->info("=> Judul: " . $articleData['title']);
 
-            $this->info("=> Mencari gambar ilustrasi gratis...");
+            $this->info("=> Mencari gambar ilustrasi gratis dari Pixabay...");
             $imageUrl = $imageService->fetchImage($selectedKeyword);
             
             $finalContent = $articleData['content'];
             if ($imageUrl) {
-                $this->info("=> Gambar ditemukan! Menyisipkan ke dalam artikel...");
+                $this->info("=> Gambar berhasil diunduh dan diproses! Menyisipkan ke dalam artikel...");
                 
                 $imageHtml = "<div style='text-align: center; margin-bottom: 20px;'>
-                                <img src='{$imageUrl}' alt='{$selectedKeyword}' title='{$selectedKeyword}' loading='lazy' style='max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);' />
+                                <img src='{$imageUrl}' alt='{$selectedKeyword}' title='{$selectedKeyword}' style='max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);' />
                               </div>";
                               
                 $finalContent = $imageHtml . "\n" . $finalContent;
@@ -135,18 +133,18 @@ class RunCampaigns extends Command
                 $this->warn("=> Gambar tidak ditemukan atau API Key belum diatur. Lanjut tanpa gambar.");
             }
 
-            $this->info("=> Sedang mempublikasikan artikel...");
+            $this->info("=> Sedang mempublikasikan artikel ke Blogger...");
             
             $isPublished = $bloggerService->publishPost(
                 $campaign->blog, 
                 $articleData['title'], 
                 $finalContent, 
-                $campaign->name,
-                $articleData['description']
+                $campaign->name, 
+                $articleData['description'] 
             );
 
             if ($isPublished) {
-                $this->info("=> SUKSES! Artikel berhasil dipublish.");
+                $this->info("=> SUKSES! Artikel berhasil dipublish ke Blogger.");
                 
                 $campaign->update(['last_run_at' => now()]);
             } else {
