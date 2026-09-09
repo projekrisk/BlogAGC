@@ -16,6 +16,15 @@ Route::get('/reset-hosting', function () {
     return 'Berhasil! Cache Hosting telah disapu bersih. Silakan akses kembali halaman login admin.';
 });
 
+Route::get('/update-database', function () {
+    try {
+        Artisan::call('migrate', ['--force' => true]);
+        return 'Berhasil! Database telah diupdate. Kolom opsi gambar sudah ditambahkan ke dalam sistem.';
+    } catch (\Exception $e) {
+        return 'Gagal update database: ' . $e->getMessage();
+    }
+});
+
 Route::get('/cron-bot-agc', function () {
     set_time_limit(120); 
     

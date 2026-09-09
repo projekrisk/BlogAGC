@@ -71,6 +71,11 @@ class CampaignResource extends Resource
                             ->required()
                             ->helperText('Jarak waktu antar postingan. Misal: 120 (untuk 2 jam sekali).'),
 
+                        Forms\Components\Toggle::make('include_image')
+                            ->label('Sertakan Gambar (Auto-Download)')
+                            ->default(true)
+                            ->helperText('Matikan jika Anda hanya ingin memposting artikel berbasis teks (tanpa gambar ilustrasi).'),
+
                         Forms\Components\Toggle::make('is_active')
                             ->label('Status Aktif')
                             ->default(true),
@@ -98,6 +103,12 @@ class CampaignResource extends Resource
                 Tables\Columns\IconColumn::make('is_active')
                     ->label('Aktif')
                     ->boolean(),
+                    
+                Tables\Columns\IconColumn::make('include_image')
+                    ->label('Pakai Gambar')
+                    ->boolean()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                
                 Tables\Columns\TextColumn::make('last_run_at')
                     ->label('Terakhir Jalan')
                     ->dateTime('d M Y, H:i')

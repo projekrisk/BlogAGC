@@ -14,6 +14,7 @@ class Campaign extends Model
     protected $casts = [
         'last_run_at' => 'datetime',
         'is_active' => 'boolean',
+        'include_image' => 'boolean',
     ];
 
     public function blog()

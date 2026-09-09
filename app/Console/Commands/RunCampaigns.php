@@ -117,20 +117,25 @@ class RunCampaigns extends Command
             $this->info("=> ARTIKEL SELESAI DITULIS!");
             $this->info("=> Judul: " . $articleData['title']);
 
-            $this->info("=> Mencari gambar ilustrasi gratis dari Pixabay...");
-            $imageUrl = $imageService->fetchImage($selectedKeyword);
-            
             $finalContent = $articleData['content'];
-            if ($imageUrl) {
-                $this->info("=> Gambar berhasil diunduh dan diproses! Menyisipkan ke dalam artikel...");
+            
+            if ($campaign->include_image) {
+                $this->info("=> Opsi Gambar AKTIF. Mencari gambar ilustrasi dari Pixabay...");
+                $imageUrl = $imageService->fetchImage($selectedKeyword);
                 
-                $imageHtml = "<div style='text-align: center; margin-bottom: 20px;'>
-                                <img src='{$imageUrl}' alt='{$selectedKeyword}' title='{$selectedKeyword}' style='max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);' />
-                              </div>";
-                              
-                $finalContent = $imageHtml . "\n" . $finalContent;
+                if ($imageUrl) {
+                    $this->info("=> Gambar berhasil diproses via ImgBB! Menyisipkan ke dalam artikel...");
+                    
+                    $imageHtml = "<div style='text-align: center; margin-bottom: 20px;'>
+                                    <img src='{$imageUrl}' alt='{$selectedKeyword}' title='{$selectedKeyword}' style='max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);' />
+                                  </div>";
+                                  
+                    $finalContent = $imageHtml . "\n" . $finalContent;
+                } else {
+                    $this->warn("=> Gambar tidak ditemukan atau API Key belum diatur. Lanjut tanpa gambar.");
+                }
             } else {
-                $this->warn("=> Gambar tidak ditemukan atau API Key belum diatur. Lanjut tanpa gambar.");
+                $this->warn("=> Opsi Gambar DIMATIKAN. Bot akan memposting teks murni.");
             }
 
             $this->info("=> Sedang mempublikasikan artikel ke Blogger...");
@@ -139,8 +144,8 @@ class RunCampaigns extends Command
                 $campaign->blog, 
                 $articleData['title'], 
                 $finalContent, 
-                $campaign->name, 
-                $articleData['description'] 
+                $campaign->name,
+                $articleData['description']
             );
 
             if ($isPublished) {
