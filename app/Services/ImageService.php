@@ -4,15 +4,17 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ImageService
 {
     public function fetchImage(string $keyword): ?string
     {
-        $apiKey = env('PIXABAY_API_KEY');
+        $pixabayKey = env('PIXABAY_API_KEY');
+        $imgbbKey = env('IMGBB_API_KEY');
 
-        if (empty($apiKey)) {
-            Log::warning("Pixabay API Key kosong. Gambar tidak akan ditambahkan.");
+        if (empty($pixabayKey) || empty($imgbbKey)) {
+            Log::warning("API Key Pixabay atau ImgBB kosong. Gambar tidak diproses.");
             return null;
         }
 
@@ -21,7 +23,7 @@ class ImageService
 
         try {
             $response = Http::withoutVerifying()->timeout(15)->get($url, [
-                'key' => $apiKey,
+                'key' => $pixabayKey,
                 'q' => $searchQuery,
                 'image_type' => 'photo',
                 'orientation' => 'horizontal',
@@ -38,17 +40,27 @@ class ImageService
                         $imageResponse = Http::withoutVerifying()->timeout(20)->get($imageUrl);
                         
                         if ($imageResponse->successful()) {
-                            $imageBody = $imageResponse->body();
-                            $mimeType = $imageResponse->header('Content-Type') ?? 'image/jpeg';
+                            $base64Image = base64_encode($imageResponse->body());
                             
-                            $base64 = base64_encode($imageBody);
-                            return "data:{$mimeType};base64,{$base64}";
+                            $uploadResponse = Http::withoutVerifying()->timeout(30)->asForm()->post("https://api.imgbb.com/1/upload", [
+                                'key' => $imgbbKey,
+                                'image' => $base64Image,
+                                'name' => 'agc_' . time() . '_' . Str::slug($searchQuery),
+                            ]);
+                            
+                            if ($uploadResponse->successful()) {
+                                $uploadData = $uploadResponse->json();
+                                
+                                return $uploadData['data']['url'] ?? null;
+                            } else {
+                                Log::error("Gagal upload ke ImgBB: " . $uploadResponse->body());
+                            }
                         }
                     }
                 }
             }
         } catch (\Exception $e) {
-            Log::error("Gagal mengambil/memproses gambar Pixabay: " . $e->getMessage());
+            Log::error("Gagal mengambil/memproses gambar: " . $e->getMessage());
         }
 
         return null;
